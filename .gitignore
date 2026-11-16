@@ -1,0 +1,43 @@
+# Rust build output; Cargo.lock is intentionally versioned for this executable.
+/target/
+/artifacts/
+/dist/
+/coverage/
+*.profraw
+*.profdata
+lcov.info
+
+# Local secrets and credentials.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+kubeconfig
+kubeconfig.*
+
+# Terraform local state and overrides (examples only).
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+!*.tfvars.json.example
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Editor and OS files.
+.idea/
+.vscode/
+.DS_Store
+*.swp
+*.swo
+*~
+__pycache__/

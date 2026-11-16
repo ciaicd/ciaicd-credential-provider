@@ -1,0 +1,89 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  quality:
+    name: Quality (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Install pinned Rust toolchain
+        run: rustup show active-toolchain
+      - run: cargo fmt --check
+      - run: cargo clippy --locked --all-targets -- -D warnings
+      - run: cargo test --locked
+      - run: cargo build --locked --release
+      - run: ./target/release/ciaicd-credential-provider --version
+  repository-checks:
+    name: Workflows and Terraform example
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Validate GitHub Actions workflows
+        run: |
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+          "$(go env GOPATH)/bin/actionlint" .github/workflows/*.yml
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        with:
+          terraform_version: 1.13.4
+          terraform_wrapper: false
+      - run: terraform fmt -check -recursive examples/terraform
+      - run: terraform -chdir=examples/terraform init -backend=false -input=false
+      - run: terraform -chdir=examples/terraform validate
+  packages:
+    name: Linux archive (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: x86_64-unknown-linux-musl
+            arch: amd64
+          - runner: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-musl
+            arch: arm64
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Install target
+        env:
+          RUST_TARGET: ${{ matrix.target }}
+        run: rustup target add "$RUST_TARGET"
+      - name: Build versioned static archive
+        env:
+          RUST_TARGET: ${{ matrix.target }}
+        run: ./package.sh "$RUST_TARGET"
+      - name: Verify packaged executable and checksum
+        run: |
+          cd artifacts
+          sha256sum --check ./*.sha256
+          mkdir extracted
+          tar -xzf ./*.tar.gz -C extracted
+          ./extracted/ciaicd-credential-provider --version
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: linux-${{ matrix.arch }}
+          path: artifacts/*.tar.gz*
+          if-no-files-found: error
+          retention-days: 14

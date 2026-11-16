@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+workdir=$(mktemp -d)
+trap 'rm -rf "$workdir"' EXIT
+curl --fail --location --proto '=https' --tlsv1.2 --retry 3 \
+  --output "$workdir/provider.tar.gz" '${download_url}'
+printf '%s  %s\n' '${archive_sha256}' "$workdir/provider.tar.gz" | sha256sum --check -
+tar --extract --gzip --file "$workdir/provider.tar.gz" --directory "$workdir" ciaicd-credential-provider
+install -d -m 0755 /usr/local/libexec/ciaicd /etc/kubernetes
+install -m 0755 "$workdir/ciaicd-credential-provider" /usr/local/libexec/ciaicd/ciaicd-credential-provider
+# Keep this as a separate fragment until merged with existing cloud providers.
+# Never overwrite the node's active kubelet credential-provider configuration.
+config=/etc/kubernetes/ciaicd-credential-provider.fragment.yaml
+if test -e "$config"; then
+  printf '%s\n' "Refusing to overwrite existing $config; review and merge it." >&2
+  exit 1
+fi
+umask 077
+cat > "$config" <<'YAML'
+apiVersion: kubelet.config.k8s.io/v1
+kind: CredentialProviderConfig
+providers:
+  - name: ciaicd-credential-provider
+    apiVersion: credentialprovider.kubelet.k8s.io/v1
+    matchImages: ['${registry_host}']
+    defaultCacheDuration: 0s
+    tokenAttributes:
+      serviceAccountTokenAudience: '${registry_audience}'
+      cacheType: Token
+      requireServiceAccount: true
+    env:
+      - name: CIAICD_REGISTRY
+        value: '${registry_host}'
+      - name: CIAICD_AUDIENCE
+        value: '${registry_audience}'
+YAML
+/usr/local/libexec/ciaicd/ciaicd-credential-provider --version
+printf '%s\n' 'Provider installed. Merge the config fragment and configure kubelet through your supported node provisioning mechanism.'

@@ -1,0 +1,121 @@
+name: Release
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  validate:
+    name: Validate version and release source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate semantic version and main ancestry
+        id: version
+        env:
+          RELEASE_REF: ${{ github.ref }}
+        run: |
+          version=$(sed -n 's/^version = "\([^"]*\)"/\1/p' Cargo.toml)
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          if [[ "$RELEASE_REF" == refs/tags/* ]]; then
+            test "$RELEASE_REF" = "refs/tags/v$version"
+          else
+            test "$RELEASE_REF" = refs/heads/main
+          fi
+          git merge-base --is-ancestor HEAD origin/main
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - run: cargo fmt --check
+      - run: cargo clippy --locked --all-targets -- -D warnings
+      - run: cargo test --locked
+      - name: Audit locked dependencies before release
+        run: |
+          cargo install cargo-deny --version 0.21.0 --locked
+          cargo deny --locked check
+  build:
+    name: Build and test Linux ${{ matrix.arch }}
+    needs: validate
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: x86_64-unknown-linux-musl
+            arch: amd64
+          - runner: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-musl
+            arch: arm64
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - run: cargo test --locked
+      - name: Build static archive
+        env:
+          RUST_TARGET: ${{ matrix.target }}
+        run: |
+          rustup target add "$RUST_TARGET"
+          ./package.sh "$RUST_TARGET"
+      - name: Verify packaged executable
+        run: |
+          cd artifacts
+          sha256sum --check ./*.sha256
+          mkdir extracted
+          tar -xzf ./*.tar.gz -C extracted
+          ./extracted/ciaicd-credential-provider --version
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: release-linux-${{ matrix.arch }}
+          path: artifacts/*.tar.gz*
+          if-no-files-found: error
+          retention-days: 14
+  publish:
+    name: Attest and publish immutable release
+    needs: [validate, build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          pattern: release-linux-*
+          path: artifacts
+          merge-multiple: true
+      - name: Verify checksums
+        run: cd artifacts && sha256sum --check ./*.sha256
+      - name: Attest build provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: artifacts/*.tar.gz
+      - name: Create release with pinned version and source commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_VERSION: ${{ needs.validate.outputs.version }}
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          tag="v$RELEASE_VERSION"
+          # Never replace existing release assets or move an existing tag.
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists; refusing to replace it." >&2
+            exit 1
+          fi
+          gh release create "$tag" artifacts/*.tar.gz artifacts/*.sha256 \
+            --target "$RELEASE_SHA" --draft --generate-notes \
+            --title "CIaICD credential provider $tag"
+          gh release edit "$tag" --draft=false --latest

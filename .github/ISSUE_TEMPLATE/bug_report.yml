@@ -1,0 +1,35 @@
+name: Bug report
+description: Report a reproducible problem with the credential provider.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For vulnerabilities, use the private reporting process in SECURITY.md.
+        Never include real JWTs, credentials, kubeconfigs or private cluster details.
+  - type: input
+    id: version
+    attributes:
+      label: Provider version
+      description: Output of ciaicd-credential-provider --version.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Kubernetes version and node platform
+      description: Include OS and architecture; omit private identifiers.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Use synthetic, redacted configuration only.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true

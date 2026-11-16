@@ -1,0 +1,21 @@
+[package]
+name = "ciaicd-credential-provider"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+publish = false
+repository = "https://github.com/ciaicd/ciaicd-credential-provider"
+readme = "README.md"
+license = "Apache-2.0"
+description = "Cloud-independent kubelet image credential provider for CIAICD"
+
+[dependencies]
+base64 = "0.22.1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
