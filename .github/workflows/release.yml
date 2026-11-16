@@ -117,5 +117,5 @@ jobs:
           fi
           gh release create "$tag" artifacts/*.tar.gz artifacts/*.sha256 \
             --target "$RELEASE_SHA" --draft --generate-notes \
-            --title "CIaICD credential provider $tag"
+            --title "CIAICD credential provider $tag"
           gh release edit "$tag" --draft=false --latest
