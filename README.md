@@ -1,4 +1,4 @@
-# CIaICD credential provider
+# CIAICD credential provider
 
 [![CI](https://github.com/ciaicd/ciaicd-credential-provider/actions/workflows/ci.yml/badge.svg)](https://github.com/ciaicd/ciaicd-credential-provider/actions/workflows/ci.yml)
 [![Security checks](https://github.com/ciaicd/ciaicd-credential-provider/actions/workflows/security.yml/badge.svg)](https://github.com/ciaicd/ciaicd-credential-provider/actions/workflows/security.yml)
