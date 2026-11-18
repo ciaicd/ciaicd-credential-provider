@@ -7,7 +7,7 @@ checks a trusted SHA-256 before extraction, and installs the static executable.
 ```hcl
 module "credential_provider" {
   source            = "./examples/terraform"
-  plugin_version    = "0.1.0"
+  plugin_version    = "0.2.0"
   node_architecture = "amd64"
   archive_sha256    = "<trusted 64-character archive checksum>"
   registry_host     = "registry.example.com"

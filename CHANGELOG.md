@@ -2,6 +2,11 @@
 
 This project follows Semantic Versioning. Release notes are published on GitHub Releases.
 
+## 0.2.0
+
+- Use `ciaicd_oidc_access_token` as the Docker username for Kubernetes ServiceAccount tokens.
+  Deploy a CIAICD Registry version that accepts this username before updating the provider on nodes.
+
 ## 0.1.0
 
 Initial development release:
