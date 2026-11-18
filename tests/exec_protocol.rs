@@ -44,7 +44,7 @@ fn real_executable_returns_the_kubelet_protocol_without_diagnostics_on_stdout() 
     assert_eq!(response["auth"]["registry.example"]["password"], token);
     assert_eq!(
         response["auth"]["registry.example"]["username"],
-        "_oidc_access_token"
+        "ciaicd_oidc_access_token"
     );
     assert_eq!(response["cacheDuration"], "300s");
 }
