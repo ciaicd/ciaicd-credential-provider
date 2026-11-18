@@ -136,7 +136,7 @@ pub fn credentials(request: Request, config: &Config, now: u64) -> Result<Respon
     response.auth.insert(
         config.registry.clone(),
         AuthConfig {
-            username: "_oidc_access_token",
+            username: "ciaicd_oidc_access_token",
             password: token,
         },
     );
@@ -181,7 +181,7 @@ mod tests {
         assert_eq!(response.cache_duration, "240s");
         assert_eq!(
             response.auth["registry.example:5443"].username,
-            "_oidc_access_token"
+            "ciaicd_oidc_access_token"
         );
         assert_eq!(response.auth["registry.example:5443"].password, jwt);
         assert!(!format!("{response:?}").contains(&jwt));

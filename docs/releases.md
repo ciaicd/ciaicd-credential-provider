@@ -5,7 +5,7 @@
 This project follows [Semantic Versioning](https://semver.org/).
 
 - `Cargo.toml` contains the executable version; `--version` reports it.
-- The matching Git tag is `vMAJOR.MINOR.PATCH` (for example, `v0.1.0`).
+- The matching Git tag is `vMAJOR.MINOR.PATCH` (for example, `v0.2.0`).
 - Update `Cargo.lock` and `CHANGELOG.md` with the version change.
 - Until 1.0, changes to the configuration/protocol may occur in a minor release.
   Document them before rollout.
@@ -25,8 +25,8 @@ This project follows [Semantic Versioning](https://semver.org/).
    ```sh
    git checkout main
    git pull --ff-only
-   git tag -a v0.1.0 -m "Release v0.1.0"
-   git push origin v0.1.0
+   git tag -a v0.2.0 -m "Release v0.2.0"
+   git push origin v0.2.0
    ```
 
 The Release workflow validates the tag/version and `main` ancestry, runs tests,
@@ -41,8 +41,8 @@ CI Actions artifacts are retained temporarily for review. Terraform should downl
 from **GitHub Release assets**, whose URLs have the following shape:
 
 ```text
-https://github.com/ciaicd/ciaicd-credential-provider/releases/download/v0.1.0/ciaicd-credential-provider-v0.1.0-linux-amd64.tar.gz
-https://github.com/ciaicd/ciaicd-credential-provider/releases/download/v0.1.0/ciaicd-credential-provider-v0.1.0-linux-arm64.tar.gz
+https://github.com/ciaicd/ciaicd-credential-provider/releases/download/v0.2.0/ciaicd-credential-provider-v0.2.0-linux-amd64.tar.gz
+https://github.com/ciaicd/ciaicd-credential-provider/releases/download/v0.2.0/ciaicd-credential-provider-v0.2.0-linux-arm64.tar.gz
 ```
 
 A failed publish may leave a draft release. Inspect it before retrying. Do not
@@ -54,7 +54,7 @@ when appropriate, or publish a new version.
 Select your version and architecture. The `.sha256` file is adjacent to its archive.
 
 ```sh
-version=0.1.0
+version=0.2.0
 arch=amd64
 archive="ciaicd-credential-provider-v${version}-linux-${arch}.tar.gz"
 base="https://github.com/ciaicd/ciaicd-credential-provider/releases/download/v${version}"

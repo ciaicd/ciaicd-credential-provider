@@ -23,7 +23,7 @@ Rust toolchain or stored registry password on the node.
 2. It invokes `ciaicd-credential-provider`, passing a `CredentialProviderRequest`
    through stdin using `credentialprovider.kubelet.k8s.io/v1`.
 3. The provider returns the original token as the Docker password for
-   `_oidc_access_token`, only for the exact configured registry hostname.
+   `ciaicd_oidc_access_token`, only for the exact configured registry hostname.
 4. The container runtime follows the registry's normal Distribution Bearer challenge.
 5. CIAICD verifies the JWT signature, trusted cluster issuer, dedicated audience,
    expiry, pod binding and exact ServiceAccount-to-role mapping, then issues a
